@@ -1,0 +1,187 @@
+SINGLE-NODE HADOOP:
+
+1. Create user named as hduser and add hduser in a group named Hadoop.
+$ sudo adduser hduser
+$ sudo usermod -G sudo hduser
+Switch to hduser - $ su hduser
+
+2. Generate ssh key-pairs and move id_rsa.pub key to authorized_keys [ Password-less
+login]
+$ ssh-keygen -t rsa -P ‘’ -f ~/.ssh/id_rsa [check ‘’ while copying]
+$ cat ~/.ssh/id_rsa.pub>>~/.ssh/authorized_keys
+$ chmod 0600 ~/.ssh/authorized_keys
+
+Type in $ ssh localhost? check if logs in without prompting the user for password.
+
+3. If it doesn’t work, install openssh-server and openssh-client packages using root privilege
+and try again.
+# apt-get install openssh-server openssh-client
+4. Check java version and download Hadoop and Java packages from internet and move
+them to the path /usr/local/hadoop ?as $sudo mv hadoop-2.7.1 /usr/local/hadoop
+
+5. Add the JAVA_HOME to hadoop-env.sh file
+$ sudo nano /usr/local/hadoop/etc/hadoop/hadoop-env.sh
+
+Locate java_home and set JAVA_HOME=/usr/local/java ? Now, save and Exit the file.
+
+6. Add the following lines to ~/.bashrc
+[Please check for quotes while copying]
+$gedit ~/.bashrc
+#HADOOP VARIABLES START
+export HADOOP_INSTALL=/usr/local/hadoop
+export PATH=$PATH:$HADOOP_INSTALL/bin
+export PATH=$PATH:$HADOOP_INSTALL/sbin
+export HADOOP_MAPRED_HOME=$HADOOP_INSTALL
+export HADOOP_COMMON_HOME=$HADOOP_INSTALL
+export HADOOP_HDFS_HOME=$HADOOP_INSTALL
+export YARN_HOME=$HADOOP_INSTALL
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_INSTALL/lib/native
+export HADOOP_OPTS=“-Djava.library.path=$HADOOP_INSTALL/lib”
+export HADOOP_CLASSPATH=$JAVA_HOME/lib/tools.jar
+#HADOOP VARIABLES END
+
+Now, save the file and Exit and refresh bashrc. Linux> . ~/.bashrc
+7. ?Add the following tag to core-site.xml inside the configuration tag.
+$ gedit /usr/local/hadoop/etc/hadoop/core-site.xml
+<property>
+<name>fs.default.name</name>
+<value> hdfs://localhost:9000 </value>
+</property>
+
+Save the file and exit
+
+8. Add the following tags to yarn-site.xml inside the configuration tag
+$ gedit /usr/local/hadoop/etc/hadoop/yarn-site.xml
+<property>
+<name>yarn.nodemanager.aux-services</name>
+<value>mapreduce_shuffle</value>
+</property>
+<property>
+<name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+<value>org.apache.hadoop.mapred.ShuffleHandler</value>
+</property>
+
+9. Copy the MapRed-site.xml.template file to MapRed-site.xml
+Linux>cp /usr/local/hadoop/etc/hadoop/mapred-site.xml.template
+/usr/local/hadoop/etc/hadoop/mapred-site.xml
+Linux> gedit /usr/local/hadoop/etc/hadoop/mapred-site.xml
+<property>
+<name>mapreduce.framework.name</name>
+<value>yarn</value>
+</property>
+
+10.Add the following tags to hdfs-site.xml inside the configuration tag
+Linux> sudo mkdir -p /usr/local/hadoop_store/hdfs
+Linux> gedit /usr/local/hadoop/etc/hadoop/hdfs-site.xml
+
+<property>
+<name>dfs.replication</name>
+<value>1</value>
+</property>
+<property>
+<name>dfs.namenode.name.dir</name>
+<value>file:/usr/local/hadoop_store/hdfs/namenode</value>
+</property>
+<property>
+<name>dfs.datanode.data.dir</name>
+<value>file:/usr/local/hadoop_store/hdfs/datanode</value>
+</property>
+
+Save the file and exit
+11. Linux> sudo chown hduser:hduser -R /usr/local/hadoop
+Linux> sudo chown hduser:hduser -R /usr/local/hadoop_store
+also give the folder the full permission
+Linux> sudo chmod -R 777 /usr/local/hadoop
+Linux> sudo chmod -R 777 /usr/local/hadoop_store
+
+12. Format your HDFS, make sure you have logged in as hadoop/hduser user
+$hdfs namenode -format
+
+13.Start/Stop the Hadoop Cluster.
+Linux> start-all.sh or stop-all.sh
+
+14. Check the hadoop web interface : localhost:8088. ? Also check if all the services are
+running
+
+Hadoop is successfully installed.
+15. Executing the word count program
+15.1. Create an input file with few sentences in it.
+
+15.2. Upload input file into HDFS using put command / copyFromLocal command put
+command to store file in HDFS, get command to read / retrieve file from HDFS.
+15.3. Create a user directory in hadoop file system hdfs using
+$ hdfs dfs -mkdir -p /user/
+$ hdfs dfs -mkdir -p /user/hadoop
+$ hdfs dfs -mkdir -p /user/hadoop/inputfiles/
+15.4. Put the text file-Mapreduce.txt into inputfiles folder as $ hdfs dfs -ls
+<location_of_Mapreduce.txt> /user/hadoop/inputfiles/
+15.5. List all files in hdfs is done using $hdfs dfs -ls /user/hadoop/inputfiles/
+
+15.6.Go to the folder where wordcount.jar is present. Place the wordcount.jar folder
+in the same hdfs directory.
+` $ hadoop fs -put wordcount.jar /user/hadoop/inputfiles/
+View the list of files : $ hadoop fs -ls /user/hadoop/inputfiles ?.This contains the input text
+file and wordcount.jar file.
+15.7. Execution of wordcount.jar:
+
+$ hadoop jar wordcount.jar /user/hadoop/inputfiles/Mapreduce.txt
+
+/user/hadoop/inputfiles/output
+? The mapreduce program gets completed and the output is stored in the output file.
+
+15.8. Finally , print the output file in cmd using cat command as
+$ hadoop dfs -cat /user/hadoop/inputfiles/output/part-00000
+
+Or download it directly from the web interface of hadoop using get command.
+$ hadoop fs -get /user/hadoop/inputfiles/output/part-00000 /home/username/Desktop
+
+Finally stop all the hadoop services using $ stop-all.sh
+
+HADOOP-FUSE:
+
+1. $ wget
+http://archive.cloudera.com/cdh5/one-click-install/trusty/amd64/cdh5-
+repository_1.0_all.deb
+
+2. $ sudo dpkg -i cdh5-repository_1.0_all.deb
+
+3. $ sudo apt-get update
+
+4. sudo apt-get install hadoop-hdfs-fuse
+
+5. $ sudo mkdir -p <mount_point>
+6. $ hadoop-fuse-dfs dfs://<name_node_hostname>:<namenode_port>
+<mount_point>
+
+EUCALYPTUS:
+
+$] mkdir -p ~/.euca
+$ cd ~/.euca
+change modes for ~/.euca and ~/.euca/* as below
+
+15. $ sudo euca_conf –get-credentials mycreds.zip to obtain credentials in cloud controller.
+
+16. unzip mycreds.zip
+
+17. listing files in ~/.euca
+
+18. In client, make an update.
+
+19. Install euca2ools using sudo apt-get install euca2ools
+
+20. Execute euca-create-volume and euca-describe-volumes using options as –U for
+URL , -I for access key and –S for secret key description
+The URL, SECRET KEY AND ACCESS KEY ARE OBTAINED from the file eucarc under
+X.509 certificate folder that was downloaded as credentials.
+
+21. Execute as
+euca-create-volume –U <url> -I <accesskey> -S <secret_key> --size 1 –z <clustername>
+to describe as below:
+euca-describe-volumes –U <url> -I <accesskey> -S <secret_key>
+
+
+REPOS:
+
+1.http://downloads.opennebula.org/repo/repo.key|apt-key add -
+2.http://archive.cloudera.com/cdh5/one-click-install/trusty/amd64/cdh5-
+repository_1.0_all.deb
